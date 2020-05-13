@@ -1,0 +1,275 @@
+---
+title: 'Final Project: Analysis of Video Games Sales'
+author: "Hai Le and Zack Frazier"
+date: "5/8/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+```{r setupdb, include=FALSE}
+# setting up for SQL
+db <- DBI::dbConnect(RSQLite::SQLite(), "C:/Users/letha/Desktop/CMSC320/vgsales.csv")
+```
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(rvest)
+library(ggplot2)
+library(lubridate)
+library(caret)
+library(e1071)
+library(party)
+```
+
+## Introduction
+
+Welcome to our final project! This dataset is called "Video Games Sales", and contains a list of video games with sales greater than 100,000 copies. The different fields included within this dataset are:
+
+* Rank - Ranking of overall sales
+* Name - The games name
+* Platform - Platform of the games release (i.e. PC, PS4, etc.)
+* Year - Year of the game's release
+* Genre - Genre of the game
+* Publisher - Publisher of the game
+* NA_Sales - Sales in North America (in millions)
+* EU_Sales - Sales in Europe (in millions)
+* JP_Sales - Sales in Japan (in millions)
+* Other_Sales - Sales in the rest of the world (in millions)
+* Global_Sales - Total worldwide sales.
+
+Are you a video games lover? Or are you an aspiring game developer? This analysis will provides a deep insight into the world of video games; how the sales of a specific genre, what is the most popular video game publisher, and much more! 
+
+URL: https://www.kaggle.com/gregorut/videogamesales/data
+
+## Loading in Data & Cleaning
+
+```{r data_prep}
+raw_data <- read.csv("C:/Users/letha/Desktop/CMSC320/vgsales.csv")
+head(raw_data)
+```
+
+
+Looking at the raw data, we see some N/A entries. Furthermore, we are only going to be using these following coloumns: Name, Platform, Year, and Global_Sales.
+
+```{r data_clean}
+tidy_data <- raw_data 
+# cleaning the N/A entries
+tidy_data[tidy_data == "N/A"] = NA
+tidy_data <- drop_na(tidy_data)
+
+# removing unwanted columns
+tidy_data <- tidy_data[-c(1,7,8,9,10)]
+head(tidy_data)
+```
+
+
+## Visualize the Tidy Data
+We are going to visualize the raw data in a variety of different scopes. Including: 
+
+* Global Sales vs. Years
+* Global Sales vs. Different Genres
+* Global Sales vs. Different Publishers
+* Global Sales vs. Different Platforms
+
+### Global Sales vs. Years
+We wanted to see the global sales across the years, and perhaps visualize this trend. First, let's graph the global sales vs. year and see the overall shape of your graph without modifications!
+```{r og_graph}
+plot <- tidy_data %>%
+  ggplot(mapping = aes(x= paste(Year), y = Global_Sales)) + 
+  geom_point() 
+
+plot + 
+  xlab("Year") + ylab("Global Sales") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+```
+
+Okay, that's a lot of data. There's spikes during some years, but it's difficult to tell what's happening. Let's visualize the sales better by taking the average global sales of each year!
+
+```{r}
+# find the average of the 6th column ~ Global Sales across the years
+avg_data <- aggregate(tidy_data[6], list(tidy_data$Year), mean)
+# renaming from Group.1 to Year appropriately
+names(avg_data)[1] <- "Year"
+head(avg_data)
+```
+Plotting this new average data frame
+```{r}
+avg_data <- avg_data %>% 
+  mutate(Year = as.numeric(as.character(Year)))
+
+avg_plot <- avg_data %>%
+  ggplot(mapping = aes(x = (Year), y = Global_Sales)) + 
+  geom_point () +
+  geom_smooth(method='loess', formula=y~x)
+
+avg_plot + 
+  xlab("Year") + ylab("Global Sales") + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+```
+
+This is much better to look at! We can see a huge spike in video games sales between the years of 1981-1992. The years prior to that spike remains relatively "stable", hovering around the .5 mark in global sales. Interestingly, the lowest average video game global sales happend in 2017. 
+
+### Global Sales vs. Different Genres
+We now want to examine the global sales in terms of different genres. With 
+this data we can answer certain questions, like which genres produce the
+most revenue, or which genres are the most popular over time.
+
+The first thing we must do is sum the global sales grouped by the genre.
+This will allow us to summarize which genres people have been more popular
+over time
+```{r genre_sales}
+sales_by_genre <- aggregate(Global_Sales~Genre, tidy_data, sum)
+head(sales_by_genre)
+```
+
+So this is interesting. It seems action-games are the most popular genres, followed by sports-games and then shooters. But this just summarizes the data taken as a whole, something more insightful might be to visualizethe popularity of each genre over time. To do this we're going to
+
+1. summarize the data's global sales in terms of Genre and Year
+2. graph the data grouped by it's genre
+
+```{r uggo_plot}
+sales_by_genre_and_time <- aggregate(Global_Sales~Genre+Year, 
+                                     tidy_data, sum) %>% 
+# must mutate the data into non-factors to be graphed
+mutate(Year = as.numeric(Year)) %>% 
+mutate(Genre = as.character(Genre))
+
+genre_time_plot <- sales_by_genre_and_time %>% 
+  ggplot(mapping = aes(x=Year, y=Global_Sales, color=Genre)) +
+  geom_point() +
+  geom_smooth(method='loess', formula=y~x, se=F)
+genre_time_plot + 
+  xlab("Year") + ylab("Global Sales") 
+```
+
+This plot is interesting, but's an absolute mess. Furthermore, our years are off now. Why is that? Well when you cast a factor like the Year to a
+number, it converts it into the magnitude of the factor instead of behaving as we would expect. To solve this, we will cast our Year variable
+to a character first, then cast that to an integer. To make our plot more readable, we will remove all of the data points and just make this a 
+line graph.
+
+```{r plot_genre_time}
+
+sales_by_genre_and_time <- aggregate(Global_Sales~Genre+Year, 
+                                     tidy_data, sum) %>% 
+# convert the Years into characters, then to numbers
+mutate(Year = as.numeric(as.character(Year))) %>% 
+mutate(Genre=as.character(Genre)) 
+
+genre_time_plot <- sales_by_genre_and_time %>% 
+  ggplot(mapping = aes(x=Year, y=Global_Sales, color=Genre)) +
+  geom_smooth(method='loess', formula=y~x, se=F)
+
+genre_time_plot + 
+  xlab("Year") + ylab("Global Sales")
+```
+
+As can be seen, the action genre is the most popular, and it's popularityhas consistently grown over time, followed closely by the sports genre.
+
+### Global Sales vs. Different Publishers
+
+Now we wish to analyize sales by publisher. Let's begin by analyzing
+sales over time for a select few publishers.
+
+```{r pub}
+# filtering our desired data
+targets = c("Bethesda Softworks", "Atari", "Activision",
+            "Nintendo", "Sony Computer Entertainment", "Sega")
+
+sales_pub <- aggregate(Global_Sales~Year+Publisher, tidy_data, sum) %>% 
+  
+# convert the Years into characters, then to numbers
+mutate(Year = as.numeric(as.character(Year))) %>% 
+mutate(Publisher=as.character(Publisher))
+
+sales_pub <- sales_pub %>%  
+filter(Publisher %in% targets)
+head(sales_pub)
+```
+Now that we have our desired filtered data, let's visualize this data!
+
+```{r pub_sales_time}
+pub_time_plot <- sales_pub %>% 
+  ggplot(mapping = aes(x=Year, y=Global_Sales, color=Publisher)) +
+  geom_point() + 
+  geom_smooth(method ='loess')
+pub_time_plot + 
+  xlab("Year") + ylab("Global Sales")
+```
+That already looks very good. However, let's delete these dots and solely focus on the trends of these publisher!
+```{r}
+pub_time_plot <- sales_pub %>% 
+  ggplot(mapping = aes(x=Year, y=Global_Sales, color=Publisher)) +
+  geom_smooth(method='loess', formula=y~x, se=F)
+pub_time_plot + 
+  xlab("Year") + ylab("Global Sales")
+```
+From this graph, we can see that 5 out of the 6 publishers all had a positive trend in regards to global sales over the years. Atari was the sole publisher that had a negative trend. 
+
+
+### Machine Learning
+
+So now let's say we want to create a program to estimate the global sales of a game. The way to do this is to train a model such that it can look at the attributes of the game and determine it's probable sales. 
+
+The first thing we need to do is to define our data in terms of one of two values. What I'm going to do is standardize the data and create a new variable that is True or False dependent on whether the global sales were at least average for their year. We'll only take a sample of the data, about 5% of it. This is a large enough sample that the accuracy of the model will be guaranteed by the central limit theorem.
+
+```{r standardize}
+
+standard_df <- tidy_data %>% 
+  mutate(Z_Sales = NA)
+
+for(y in 1980:2020) {
+  stdev <- sd(filter(standard_df, Year==y)$Global_Sales)
+  avg <- mean(filter(standard_df, Year == y)$Global_Sales)
+  standard_df <- standard_df %>% 
+    mutate(Z_Sales = ifelse(Year == y, ((Global_Sales - avg)/stdev), Z_Sales))
+}
+
+# Here we must take a sample, because my computer does not have the 
+# RAM to train with 16,000 observations.
+standard_df <- standard_df[sample(nrow(standard_df), 815),]
+
+standard_df
+
+```
+
+Next we want to categorize our data. We will denote the Success_Level as above average or
+below average in terms of global sales. So if a game sold above or equal to the global average for that
+year, which is signified by it's Z_Sales being greater than or equal to zero, then we will mark it as
+above average. If a game sold below average, which means it's Z_Sales variable is below zero, then we
+will
+
+```{r categorize}
+
+standard_df <- standard_df %>% 
+  mutate(Success_Level = ifelse(Z_Sales >= 0, 'Above Average', 'Below Average')) %>%
+  select(-Global_Sales, -Name)
+standard_df
+```
+
+The next thing we need to do is divide our data into a training set and a testing 
+set. We will use the training set to train our model, then test our model on the
+testing set to determine it's accuracy.
+
+```{r train}
+set.seed(1234)
+
+partitionRule <- createFolds(standard_df$Success_Level, k=10, list=F)
+trainingSet <- standard_df[partitionRule,]
+testingSet <- standard_df[-partitionRule,]
+
+names(trainingSet) <- make.names(colnames(trainingSet))
+names(testingSet) <- make.names(colnames(testingSet))
+```
+
+Now we build the model. We will be using a K-Nearest-Neighbor model for our predictions.
+
+```{r model}
+
+knn_fit <- train(as.factor(Success_Level)~., data=trainingSet, method='knn')
+knn_predict <- predict(knn_fit, newdata=testingSet)
+confusionMatrix(knn_predict, as.factor(testingSet$Success_Level))
+
+```
+
