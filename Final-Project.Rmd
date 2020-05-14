@@ -3,8 +3,8 @@ title: 'Final Project: Analysis of Video Games Sales'
 author: "Hai Le and Zack Frazier"
 date: "5/8/2020"
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -59,13 +59,12 @@ These libraries can be installed via this command: install.packages("<library_na
 
 ## I. Loading in Data & Cleaning
 
-We're going to load this csv file into R and take a look!
 ```{r data_prep}
 raw_data <- read.csv("C:/Users/letha/Desktop/CMSC320/vgsales.csv")
 head(raw_data)
 ```
 
-Looking at the raw data, there are some N/A entries. N/A entries will likely mess up future computations, so we will encode these N/A values properly. Furthermore, with the scope of this tutorials, we are only going to be using the Name, Platform, Year, and Global_Sales columns! Therefore, we will remove the other unnecesarry columns. 
+Looking at the raw data, there are some N/A entries. Furthermore, we are only going to be using these following coloumns: Name, Platform, Year, and Global_Sales.
 
 ```{r data_clean}
 tidy_data <- raw_data 
@@ -231,8 +230,8 @@ for(y in 1980:2020) {
   standard_df <- standard_df %>% 
     mutate(Z_Sales = ifelse(Year == y, ((Global_Sales - avg)/stdev), Z_Sales))
 }
-# a sample size of 815 data points from the 16,000 total points
-standard_df <- standard_df[sample(nrow(standard_df), 815),]
+# a sample size of 2000 data points from the 16,000 total points
+standard_df <- standard_df[sample(nrow(standard_df), 2000),]
 standard_df
 ```
 
