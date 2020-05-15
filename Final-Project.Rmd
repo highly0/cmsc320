@@ -17,7 +17,7 @@ library(e1071)
 library(party)
 ```
 
-Welcome to our tutorial! Are you a video games lover/enthusiast, a game developer with the aspiration of making millions, or just have a quest for knowledge for the business aspect of video games? Given the appropriate data, analysis via the power of **Data Science** can provide a deep insights into almost any real-life applications, including video games!. Questions like how the sales of a specific genre fluctuated over time; what is the most popular video game publisher; what factor constitutes a high grossing video games, and many others can be answer with important data science concepts!  
+Welcome to our tutorial! Are you a video games lover/enthusiast, a game developer with the aspiration of making millions, or just have a quest for knowledge for the business aspect of video games? Given the appropriate data, analysis via the power of **Data Science** can provide a deep insights into almost any real-life applications, including video games! Questions like how the sales of a specific genre fluctuated over time; what is the most popular video game publisher; what factor constitutes a high grossing video games, and many others can be answer with important data science concepts!  
 
 Sounds exciting right? Now let's talk **Data Science**!!  
 
@@ -53,8 +53,7 @@ The website that we used: kaggle.come is a great source of data for a wide range
 
 ### How will we collect this set of data?
 
-This project will be in R; therefore you will need to go to the installation proccess for R and Rstudio. After you've installed R and Rstudio, you will need the following libraries for the tasks that we will be covering: 
-
+This project will be in R; therefore you will need to go to the installation proccess for R and Rstudio. After you've installed R and Rstudio, you will need the following libraries for the tasks that we will be covering:   
 * tidyverse
 * rvest
 * ggplot2
@@ -88,14 +87,14 @@ head(tidy_data)
 
 ## Step 3: Exploratory Analysis and Data Visualization
 
-**Exploratory Data Analysis** is the last step before statistical analysis and machine learning. In this steps, we will cover the basics of visualizing datas through different graphing techniques and applications of linear regressions. Furthermore, yt is important to spot nuances like skew, the distribution of data, any sort of trends, how pairs of variables interact, and any problems with the data. The data analysis will help us to find assumptions for the predications we will be making.  
+**Exploratory Data Analysis** is the last step before statistical analysis and machine learning. In this steps, we will cover the basics of visualizing datas through different graphing techniques and applications of linear regressions. Analyzing how pairs of variables interact gives important insights into different aspects of your data. Furthermore, data analysis will help us to find assumptions for the predications we will be making.  
 
 We are going to visualize the raw data in a variety of different *scopes*, including:   
 * Global Sales vs. Years
 * Global Sales vs. Different Genres
-* Global Sales vs. Different Publishers
+* Global Sales vs. Different Publishers  
 
-### Global Sales vs. Years  
+### Global Sales vs. Years
 First, let's take a look at the relationship between global sales and years. Has the video game businesses gathered more money as time goes by? or has it decreased? This question can be answered after we analyze/visualize global sales vs. year. 
 ```{r glob_years}
 plot <- tidy_data %>%
@@ -112,7 +111,7 @@ Okay, that's a lot of data. There's spikes during some years, but it's difficult
 avg_data <- aggregate(tidy_data[6], list(tidy_data$Year), mean)
 # renaming from Group.1 to Year appropriately
 names(avg_data)[1] <- "Year"
-head(avg_data)
+view(avg_data)
 ```
 With the data above, we can easily visualize the trend of global sales throughout the year. Let's plot this new data frame and see what happens!
 ```{r plot_glob_years_avg}
@@ -162,8 +161,7 @@ genre_time_plot +
 
 This plot is interesting, but's an absolute mess. Furthermore, our years are off now. Why is that? Well when you cast a factor like the Year to a
 number, it converts it into the magnitude of the factor instead of behaving as we would expect. To solve this, we will cast our Year variable
-to a character first, then cast that to an integer. To make our plot more readable, we will remove all of the data points and just make this a 
-line graph.
+to a character first, then cast that to an integer. To make our plot more readable, we will remove all of the data points and just make this a line graph.
 
 ```{r plot_genre_time}
 
@@ -180,7 +178,7 @@ genre_time_plot <- sales_by_genre_and_time %>%
 genre_time_plot + 
   xlab("Year") + ylab("Global Sales")
 ```
-As can be seen, the action genre is the most popular, and it's popularityhas consistently grown over time, followed closely by the sports genre.
+As can be seen, the action genre is the most popular from a holistic view, and it's popularityhas consistently grown over time, followed closely by the sports genre. However, in the late 2010's, shooter games rose to the top in grossing! 
 
 ### Global Sales vs. Different Publishers
 
@@ -211,7 +209,7 @@ pub_time_plot <- sales_pub %>%
 pub_time_plot + 
   xlab("Year") + ylab("Global Sales")
 ```
-That already looks very good. However, let's delete these dots and solely focus on the trends of these publisher!
+That already looks very good. However, let's remove these dots and solely focus on the trends of these publisher!
 ```{r}
 pub_time_plot <- sales_pub %>% 
   ggplot(mapping = aes(x=Year, y=Global_Sales, color=Publisher)) +
@@ -219,16 +217,48 @@ pub_time_plot <- sales_pub %>%
 pub_time_plot + 
   xlab("Year") + ylab("Global Sales")
 ```
-From this graph, we can see that 4 out of the 6 publishers all had a similar trend in regards to global sales over the years. Activision, Sega, Nintendo, and Bethesda Softworks all had a huge peaked then plumitted in sales. Atari was the sole publisher that remained a relatively constant trend. Sony had an increased in sale and remained in the late 90's and remained relatively constant until the 2010 ish and plumitted back down. 
+From this graph, Nintendo holistically has been at the top of video game publisher when it comes to global sales. However, Activision rose to the top as of recent times (which corresponds to the rise of shooting games since Activision is known for First-Person-Shooter games).
 
 ## Step 4: Analysis, Hypothesis Testing and Machine Learning
 
-So now let's say we want to create a program to estimate the global sales of a game. The way to do this is to train a model such that it can look at the attributes of the game and determine it's probable sales. 
+### Hypothesis Testing
 
-The first thing we need to do is to define our data in terms of one of two values. What I'm going to do is standardize the data and create a new variable that is True or False dependent on whether the global sales were at least average for their year. We'll only take a sample of the data, about 5% of it. This is a large enough sample that the accuracy of the model will be guaranteed by the *central limit theorem*.
+**Hypothesis testing** is an essential procedure in statistics. A hypothesis test evaluates two mutually exclusive statements about a population to determine which statement is best supported by the sample data. **Hypothesis Testing** uses the important mathematical concepts like the *Law of Large Numbers* and *Central Limit Theorem* to decipher whether your hypothesis is the case or not. 
+
+Let's think about what to hypothesize within our data! Looking at the history of video games and the major events within its short 40 years time line, the 2 major events for console gaming was: the introduction of game cartridge vs. CD's. The introduction of game cartridge was popularized via Nintendo Entertainment System, or NES. The NES was released in 1985. On the other hand, CD's was popularized via the Playstation, or PS1. The PS1 was released in 1995. Both are groundbreaking events in the world of videogames! Which was more popular (measured via global sales)? With that in mind, that will be our hypotheses. 
+
+**Null Hypothesis**: The release of PS1 (or the introduction of gaming CDs) received more global sales  
+**Alternative Hypothesis**: The release of the NSE (or the introduction of gaming cartridges) received more global sales  
+
+We will use a *paired t-test* to test our hypothesis. The paired samples t-test is used to compare the means between two related groups of samples. As regards to our rejection value, we will reject our null hypothesis if our calculated p-value is less than 0.05
+
+```{r hypothesis}
+# filtering our all of the PS and NES games
+ps_vec <- filter(tidy_data, Platform == "PS")$Global_Sales
+nes_vec <- filter(tidy_data, Platform == "NES")$Global_Sales
+
+ps_vec <- sort(ps_vec, decreasing = TRUE)
+# since NES only has 98 entries, we filtered out the top 98 grossed games of PS
+ps_vec <- ps_vec[1:98]
+nes_vec <- sort(nes_vec, decreasing = TRUE)
+
+# performating the t-test
+t_test <- t.test(ps_vec, nes_vec, paired = TRUE, alternative = "greater")
+# divide by 2 because one-tailed t-test
+t_test$p.value/2
+```
+
+Since we are performing a *one-tailed t-test*, we would need to divide the p value in half. A one-tailed test allots all of your alpha to testing the statistical significance in the one direction of interest. In this case, we are only testing whether or not the release of PS1 gathered more income than the release of NES, or vise versa; but not **both**.
+
+Based on our hypothesis testing, our *p* value is 0.01013816, which is less than 0.05. Therefore, we reject the null hypothesis. Our data suggests that the amount of global sales gathered from the introduction of the PS1 is *greater* than the amount with NES. 
+
+### Machine Learning
+
+**Analysis and Machine Learning** is a very important topic within data science. A precise prediction of said values can be of huge importance in many different aspects. In our case, let's say we want to create a program to estimate the global sales of your game. One can achieve this through the power of Machine Learning! You can train a model to look at the attributes of the game and determine it's probable sales. 
+
+The first thing we need to do is to define our data in terms of one of two values. What I'm going to do is standardize the data and create a new variable that is True or False dependent on whether the global sales were at least average for their year. We'll only take a sample of the data, about 5% of it. This is a large enough sample that the accuracy of the model will be guaranteed by the *Central Limit Theorem*.
 
 ```{r standardize}
-
 standard_df <- tidy_data %>% 
   mutate(Z_Sales = NA)
 
@@ -243,7 +273,7 @@ standard_df <- standard_df[sample(nrow(standard_df), 815),]
 head(standard_df)
 ```
 
-Next we want to categorize our data. We will denote the Success_Level as above average or below average in terms of global sales. So if a game sold above or equal to the global average for that year, which is signified by it's Z_Sales being greater than or equal to zero, then we will mark it as above average. If a game sold below average, which means it's Z_Sales variable is below zero, then we will
+Next we want to categorize our data. We will denote the Success_Level as above average or below average in terms of global sales. So if a game sold above or equal to the global average for that year, which is signified by it's Z_Sales being greater than or equal to zero, then we will mark it as above average. If a game sold below average, which means it's Z_Sales variable is below zero, then we will denote as below average appropriately.  
 
 ```{r categorize}
 standard_df <- standard_df %>% 
@@ -268,8 +298,23 @@ names(testingSet) <- make.names(colnames(testingSet))
 Now we build the model. We will be using a K-Nearest-Neighbor model for our predictions.
 
 ```{r model}
-
 knn_fit <- train(as.factor(Success_Level)~., data=trainingSet, method='knn')
 knn_predict <- predict(knn_fit, newdata=testingSet)
 confusionMatrix(knn_predict, as.factor(testingSet$Success_Level))
 ```
+
+## Step 5: Analysis
+
+Here are the information gathered from the steps above:  
+
+* Huge spike of video global sales in the period of 1981-1992. The average grossing peaked at the late 90's. The years after that initial spike remained relative static.
+* From a holistic view, action games is undoubted the most popular amongst the variety of other genres. However, in the late 2010's, shooter game rose to the top in terms of grossing. 
+* From a holistic view,  Nintendo has been at the top of video game publisher when it comes to global sales. However, Activision rose to the top as of recent times (which corresponds to the rise of shooting games since Activision is known for First-Person-Shooter games).
+* The first release of gaming CDs via PS1 gathered more interest/popularity (measured by global sales) than the first release of gaming cartridges via NES. 
+* A ML model that predicts the grossing of a game base on certain factors.
+
+From those information gathered, one can synthesize that: the global sales peaked in the late 90s, and thus the introduction of CD-ROM was also in the late 90's (popularized by PS1 in 1995). Therefore, the introduction of CD's possibly aided the peaked grossing in the late 90's. This would make sense due to the increase in accessibility for the customer. Furthermore, gaming CD's are still of use in today's video game world. Therefore, one could say that another revolutionary change in the way we play games could see another spike in video game grossing (something to the extent of CD-ROM). Recently, cloud gaming and digital distribution unsurpringly seems to be gaining popularity  due to convenience purporses. Will it cause another spike in video game grossing? We shall see :) 
+
+Moreover, FPS or shooter games seems to be the highest grossing genre as of recent time. With its high demands, aspiring game makers could potentially exploit more on this genre (with other factors demonstrated from the ML), and thus earn a lot of revenue! 
+
+That concludes our tutorial. Thank you so much for making it all the way through this tutorial! We hope that you learned something new from this, and start your own data adventure sometime soon :)
